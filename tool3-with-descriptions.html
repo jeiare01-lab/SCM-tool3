@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SCM Tool 3: Comparison Report</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f9fafb; color: #374151; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .header { background: linear-gradient(135deg, #6B4C9A 0%, #D4AF37 100%); color: white; padding: 40px 20px; text-align: center; margin-bottom: 40px; border-radius: 8px; }
+        .header h1 { font-size: 32px; margin-bottom: 10px; }
+        .tabs { display: flex; gap: 10px; margin-bottom: 30px; flex-wrap: wrap; }
+        .tab-btn { padding: 12px 24px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600; background: #e5e7eb; color: #374151; }
+        .tab-btn.active { background: #6B4C9A; color: white; }
+        .setup-section { background: white; padding: 30px; border-radius: 8px; margin-bottom: 30px; border: 1px solid #e5e7eb; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: #1f2937; font-size: 14px; }
+        .form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; }
+        .dimensions-section { display: grid; gap: 20px; }
+        .factor { background: white; padding: 20px; border-radius: 8px; border: 1px solid #e5e7eb; }
+        .factor-title { font-size: 16px; font-weight: 700; color: #1f2937; margin-bottom: 15px; }
+        .dimension { padding: 15px; background: #f9fafb; border-radius: 6px; border-left: 4px solid #2563EB; margin-bottom: 15px; }
+        .dimension-name { font-weight: 600; color: #1f2937; margin-bottom: 8px; font-size: 14px; }
+        .level-options { display: grid; gap: 10px; }
+        .level-btn { padding: 10px; border: 2px solid #d1d5db; background: white; border-radius: 4px; cursor: pointer; text-align: left; transition: all 0.2s; }
+        .level-btn:hover { border-color: #6B4C9A; }
+        .level-btn.selected { background: #6B4C9A; color: white; border-color: #6B4C9A; }
+        .level-label { font-weight: 600; font-size: 13px; margin-bottom: 4px; }
+        .level-desc { font-size: 12px; opacity: 0.8; line-height: 1.4; }
+        .report-section { background: white; padding: 30px; border-radius: 8px; border: 1px solid #e5e7eb; }
+        .summary-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .card { padding: 20px; border-radius: 8px; text-align: center; }
+        .card.aligned { background: #dbeafe; border: 2px solid #2563EB; }
+        .card.gap { background: #fee2e2; border: 2px solid #dc2626; }
+        .card-value { font-size: 28px; font-weight: 700; margin-bottom: 10px; }
+        .gap-list { margin-top: 20px; padding: 20px; background: #fef2f2; border-left: 4px solid #dc2626; border-radius: 6px; }
+        .gap-item { padding: 10px; background: white; border-radius: 4px; margin-bottom: 8px; font-size: 13px; }
+        h2 { margin-bottom: 20px; font-size: 20px; }
+        .no-data { text-align: center; padding: 40px 20px; color: #6b7280; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        const DESCRIPTIONS = {
+            'Education': [
+                { level: 1, label: 'High School', desc: 'High school diploma or equivalent' },
+                { level: 2, label: 'Associate Degree', desc: 'Associate degree or 1-2 years training' },
+                { level: 3, label: 'Bachelor\'s', desc: 'Bachelor\'s degree; independent work' },
+                { level: 4, label: 'Bachelor\'s + Certs', desc: 'Bachelor\'s + certifications (APICS, CSCP)' },
+                { level: 5, label: 'Master\'s+', desc: 'Master\'s degree; thought leader' }
+            ],
+            'Work Experience': [
+                { level: 1, label: '0-2 Years', desc: 'Learning and following procedures' },
+                { level: 2, label: '2-5 Years', desc: 'Developing multi-functional awareness' },
+                { level: 3, label: '5-10 Years', desc: 'Manages independently' },
+                { level: 4, label: '10-15 Years', desc: 'Breadth across roles; mentors others' },
+                { level: 5, label: '15+ Years', desc: 'Shapes organizational practices' }
+            ],
+            'Professional Qualifications': [
+                { level: 1, label: 'None', desc: 'No certifications; foundational training' },
+                { level: 2, label: '1 Entry-Level', desc: 'Entry-level certification; pursuing credentials' },
+                { level: 3, label: '1-2 Relevant', desc: '1-2 relevant certifications' },
+                { level: 4, label: '2+ Advanced', desc: '2+ advanced certifications; recognized expert' },
+                { level: 5, label: 'Multiple Advanced', desc: 'Multiple advanced; industry speaker' }
+            ],
+            'Industry Knowledge': [
+                { level: 1, label: 'No Experience', desc: 'External hire learning fundamentals' },
+                { level: 2, label: '1-2 Years', desc: 'Understands basic supply chain concepts' },
+                { level: 3, label: '3-5 Years', desc: 'Solid knowledge of processes' },
+                { level: 4, label: '5-10 Years', desc: 'Expertise across multiple areas' },
+                { level: 5, label: '10+ Years', desc: '10+ years deep expertise' }
+            ],
+            'Planning and Organizing': [
+                { level: 1, label: 'Day-to-Day', desc: 'Routine tasks completed on daily basis' },
+                { level: 2, label: 'Varying Tasks', desc: 'Prioritize and carry out varying tasks independently' },
+                { level: 3, label: 'Team Goals', desc: 'Planning for specific team objectives' },
+                { level: 4, label: 'Business Cycle', desc: 'Business cycle planning; leading teams' },
+                { level: 5, label: 'Strategic', desc: 'Long-term strategic planning with implications' }
+            ],
+            'Decision Making & Problem Solving': [
+                { level: 1, label: 'Simple Issues', desc: 'Clear guidelines; follow procedures' },
+                { level: 2, label: 'Routine Issues', desc: 'Routine with clear guidelines' },
+                { level: 3, label: 'Analysis', desc: 'Analysis and assessment; independent judgment' },
+                { level: 4, label: 'Complex Issues', desc: 'Complex issues with broad implications' },
+                { level: 5, label: 'Strategic', desc: 'Strategic decisions with significant impact' }
+            ],
+            'Leadership': [
+                { level: 1, label: 'Team Member', desc: 'Sole contributor or team member' },
+                { level: 2, label: 'Team Role', desc: 'Leading role with common goals' },
+                { level: 3, label: 'Project Lead', desc: 'Lead projects; delegate and monitor progress' },
+                { level: 4, label: 'Team Culture', desc: 'Drive team-based culture for business' },
+                { level: 5, label: 'Organizational', desc: 'Steer diversified groups and businesses' }
+            ],
+            'Innovation': [
+                { level: 1, label: 'Standards', desc: 'Strictly adhere to standards and procedures' },
+                { level: 2, label: 'New Approaches', desc: 'Allow new approaches and solutions' },
+                { level: 3, label: 'Initiatives', desc: 'Develop initiatives to enhance efficiency' },
+                { level: 4, label: 'Business Goals', desc: 'Develop initiatives for business goals' },
+                { level: 5, label: 'Big Picture', desc: 'See big picture; steer growth' }
+            ],
+            'Communication': [
+                { level: 1, label: 'Courtesy', desc: 'Basic courtesy and accurate information' },
+                { level: 2, label: 'Direct', desc: 'Effective communication affecting results' },
+                { level: 3, label: 'Customer Interaction', desc: 'Deal with complaints persuasively' },
+                { level: 4, label: 'Relationships', desc: 'Relationships bear significant impact' },
+                { level: 5, label: 'Strategic', desc: 'Internal/external relationships crucial' }
+            ],
+            'Customer Focus': [
+                { level: 1, label: 'Fundamentals', desc: 'Understanding business fundamentals' },
+                { level: 2, label: 'Industry Knowledge', desc: 'Apply industry and market trends' },
+                { level: 3, label: 'Market Dynamics', desc: 'Leverage market opportunities' },
+                { level: 4, label: 'Business Oriented', desc: 'Drive business-oriented mindset' },
+                { level: 5, label: 'Strategic Partner', desc: 'Trusted strategic partner' }
+            ],
+            'Business Acumen': [
+                { level: 1, label: 'Basic', desc: 'Basic awareness for business discussions' },
+                { level: 2, label: 'Operational', desc: 'Industry trends understanding' },
+                { level: 3, label: 'Strategic', desc: 'Execute strategy with sector knowledge' },
+                { level: 4, label: 'Business Driver', desc: 'Leverage opportunities strategically' },
+                { level: 5, label: 'Strategic Vision', desc: 'Recognized authority; thought leader' }
+            ],
+            'Scope of Work': [
+                { level: 1, label: 'Individual', desc: 'Individual contributor role' },
+                { level: 2, label: 'Defined Area', desc: 'Defined area with clear boundaries' },
+                { level: 3, label: 'Multiple Areas', desc: 'Spans multiple functional areas' },
+                { level: 4, label: 'Business Unit', desc: 'Business unit level' },
+                { level: 5, label: 'Enterprise', desc: 'Enterprise-wide scope' }
+            ],
+            'Impact on Results': [
+                { level: 1, label: 'Own Work', desc: 'Impact on own work output' },
+                { level: 2, label: 'Team Results', desc: 'Impact on team results' },
+                { level: 3, label: 'Department', desc: 'Impact on department results' },
+                { level: 4, label: 'Business Unit', desc: 'Impact on business unit' },
+                { level: 5, label: 'Organization', desc: 'Impact on organizational results' }
+            ],
+            'Complexity of Work': [
+                { level: 1, label: 'Routine', desc: 'Routine and repetitive' },
+                { level: 2, label: 'Moderately Complex', desc: 'Moderately complex' },
+                { level: 3, label: 'Complex', desc: 'Complex work' },
+                { level: 4, label: 'Highly Complex', desc: 'Highly complex and varied' },
+                { level: 5, label: 'Strategic', desc: 'Strategic complexity' }
+            ],
+            'Revenue Contribution': [
+                { level: 1, label: 'Support', desc: 'Support function' },
+                { level: 2, label: 'Minor', desc: 'Minor revenue impact' },
+                { level: 3, label: 'Moderate', desc: 'Moderate revenue impact' },
+                { level: 4, label: 'Significant', desc: 'Significant revenue impact' },
+                { level: 5, label: 'Critical', desc: 'Critical revenue driver' }
+            ],
+            'Contribution to Product Delivery': [
+                { level: 1, label: 'Component', desc: 'One component of delivery' },
+                { level: 2, label: 'Multiple', desc: 'Multiple components' },
+                { level: 3, label: 'Key Process', desc: 'Key delivery process' },
+                { level: 4, label: 'Critical Function', desc: 'Critical function' },
+                { level: 5, label: 'Strategic', desc: 'Strategic delivery driver' }
+            ],
+            'Control of Financial Resources': [
+                { level: 1, label: 'Own Budget', desc: 'Own small budget' },
+                { level: 2, label: 'Departmental', desc: 'Departmental budget (₱5-25M)' },
+                { level: 3, label: 'Significant', desc: 'Significant budget (₱25-250M)' },
+                { level: 4, label: 'Large', desc: 'Large budget (₱250M-2.5B)' },
+                { level: 5, label: 'Enterprise', desc: 'Enterprise budget (₱2.5B+)' }
+            ],
+            'Management of Human Resources': [
+                { level: 1, label: 'Self', desc: 'Manages own work' },
+                { level: 2, label: 'Small Team', desc: 'Manages 2-5 people' },
+                { level: 3, label: 'Team', desc: 'Manages 5-10 people' },
+                { level: 4, label: 'Department', desc: 'Manages department (10-50)' },
+                { level: 5, label: 'Division', desc: 'Manages division (50+)' }
+            ],
+            'Process Management': [
+                { level: 1, label: 'Follow', desc: 'Follow defined processes' },
+                { level: 2, label: 'Optimize', desc: 'Optimize existing processes' },
+                { level: 3, label: 'Manage', desc: 'Manage process improvements' },
+                { level: 4, label: 'Design', desc: 'Design new processes' },
+                { level: 5, label: 'Strategic', desc: 'Strategic process transformation' }
+            ],
+            'Representation': [
+                { level: 1, label: 'Individual', desc: 'Represents self' },
+                { level: 2, label: 'Team', desc: 'Represents team' },
+                { level: 3, label: 'Department', desc: 'Represents department' },
+                { level: 4, label: 'Business Unit', desc: 'Represents business unit' },
+                { level: 5, label: 'Organization', desc: 'Represents organization' }
+            ],
+            'Challenges': [
+                { level: 1, label: 'Routine', desc: 'Routine challenges' },
+                { level: 2, label: 'Occasional', desc: 'Occasional complex challenges' },
+                { level: 3, label: 'Regular', desc: 'Regular complex challenges' },
+                { level: 4, label: 'Frequent', desc: 'Frequent strategic challenges' },
+                { level: 5, label: 'Continuous', desc: 'Continuous high-stakes decisions' }
+            ]
+        };
+
+        const FACTORS = {
+            'Know-How': ['Education', 'Work Experience', 'Professional Qualifications', 'Industry Knowledge'],
+            'Competencies': ['Planning and Organizing', 'Decision Making & Problem Solving', 'Leadership', 'Innovation', 'Communication', 'Customer Focus', 'Business Acumen'],
+            'Duties & Responsibilities': ['Scope of Work', 'Impact on Results', 'Complexity of Work', 'Revenue Contribution', 'Contribution to Product Delivery', 'Control of Financial Resources', 'Management of Human Resources', 'Process Management'],
+            'Working Authority': ['Representation', 'Challenges']
+        };
+
+        function Tool3() {
+            const [activeTab, setActiveTab] = useState('setup');
+            const [positionName, setPositionName] = useState('');
+            const [personName, setPersonName] = useState('');
+            const [cluster, setCluster] = useState('Generalist');
+            const [jobRatings, setJobRatings] = useState({});
+            const [personRatings, setPersonRatings] = useState({});
+
+            const allDimensions = Object.values(FACTORS).flat();
+
+            const setRating = (dim, level, type) => {
+                if (type === 'job') {
+                    setJobRatings({...jobRatings, [dim]: level});
+                } else {
+                    setPersonRatings({...personRatings, [dim]: level});
+                }
+            };
+
+            const calculateReport = () => {
+                let aligned = 0, gaps = 0;
+                allDimensions.forEach(dim => {
+                    const jobLevel = jobRatings[dim] || 0;
+                    const personLevel = personRatings[dim] || 0;
+                    if (personLevel >= jobLevel) aligned++;
+                    if (personLevel < jobLevel) gaps++;
+                });
+                return { aligned, gaps, total: allDimensions.length };
+            };
+
+            const report = calculateReport();
+
+            return (
+                <div className="container">
+                    <div className="header">
+                        <h1>📊 SCM Tool 3</h1>
+                        <p>Alignment Comparison Report</p>
+                    </div>
+
+                    <div className="tabs">
+                        <button className={`tab-btn ${activeTab === 'setup' ? 'active' : ''}`} onClick={() => setActiveTab('setup')}>⚙️ Setup</button>
+                        <button className={`tab-btn ${activeTab === 'job' ? 'active' : ''}`} onClick={() => setActiveTab('job')}>📋 Job Evaluation</button>
+                        <button className={`tab-btn ${activeTab === 'person' ? 'active' : ''}`} onClick={() => setActiveTab('person')}>👤 Person Evaluation</button>
+                        <button className={`tab-btn ${activeTab === 'report' ? 'active' : ''}`} onClick={() => setActiveTab('report')}>📈 Report</button>
+                    </div>
+
+                    {activeTab === 'setup' && (
+                        <div className="setup-section">
+                            <h2>Setup</h2>
+                            <div className="form-group">
+                                <label>Position Name</label>
+                                <input type="text" placeholder="e.g., Procurement Manager" value={positionName} onChange={(e) => setPositionName(e.target.value)} />
+                            </div>
+                            <div className="form-group">
+                                <label>Person Name</label>
+                                <input type="text" placeholder="e.g., Maria Santos" value={personName} onChange={(e) => setPersonName(e.target.value)} />
+                            </div>
+                            <div className="form-group">
+                                <label>Job Cluster</label>
+                                <select value={cluster} onChange={(e) => setCluster(e.target.value)}>
+                                    <option>Specialist</option>
+                                    <option>Generalist</option>
+                                    <option>Lead</option>
+                                    <option>Business Partner</option>
+                                    <option>Strategic Partner</option>
+                                    <option>Executive</option>
+                                    <option>C-Suite</option>
+                                </select>
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'job' && (
+                        <div>
+                            <h2>Job Evaluation: {positionName || 'Position'}</h2>
+                            <div className="dimensions-section">
+                                {Object.entries(FACTORS).map(([factor, dims]) => (
+                                    <div key={factor} className="factor">
+                                        <div className="factor-title">{factor}</div>
+                                        {dims.map(dim => (
+                                            <div key={dim} className="dimension">
+                                                <div className="dimension-name">{dim}</div>
+                                                <div className="level-options">
+                                                    {DESCRIPTIONS[dim].map(opt => (
+                                                        <button key={opt.level} className={`level-btn ${jobRatings[dim] === opt.level ? 'selected' : ''}`} onClick={() => setRating(dim, opt.level, 'job')}>
+                                                            <div className="level-label">L{opt.level}: {opt.label}</div>
+                                                            <div className="level-desc">{opt.desc}</div>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'person' && (
+                        <div>
+                            <h2>Person Evaluation: {personName || 'Person'}</h2>
+                            <div className="dimensions-section">
+                                {Object.entries(FACTORS).map(([factor, dims]) => (
+                                    <div key={factor} className="factor">
+                                        <div className="factor-title">{factor}</div>
+                                        {dims.map(dim => (
+                                            <div key={dim} className="dimension">
+                                                <div className="dimension-name">{dim}</div>
+                                                <div className="level-options">
+                                                    {DESCRIPTIONS[dim].map(opt => (
+                                                        <button key={opt.level} className={`level-btn ${personRatings[dim] === opt.level ? 'selected' : ''}`} onClick={() => setRating(dim, opt.level, 'person')}>
+                                                            <div className="level-label">L{opt.level}: {opt.label}</div>
+                                                            <div className="level-desc">{opt.desc}</div>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'report' && (
+                        <div className="report-section">
+                            <h2>Comparison Report</h2>
+                            {Object.keys(jobRatings).length === 0 ? (
+                                <div className="no-data">Complete both evaluations to see the report.</div>
+                            ) : (
+                                <>
+                                    <div className="summary-cards">
+                                        <div className="card aligned">
+                                            <h3>Aligned</h3>
+                                            <div className="card-value">🟢 {report.aligned}</div>
+                                        </div>
+                                        <div className="card gap">
+                                            <h3>Gaps</h3>
+                                            <div className="card-value">🔴 {report.gaps}</div>
+                                        </div>
+                                    </div>
+                                    {report.gaps > 0 && (
+                                        <div className="gap-list">
+                                            <h4>Dimensions with Gaps</h4>
+                                            {allDimensions.filter(dim => (jobRatings[dim] || 0) > (personRatings[dim] || 0)).map(dim => (
+                                                <div key={dim} className="gap-item">
+                                                    <strong>{dim}</strong><br/>Required: L{jobRatings[dim]} | Person: L{personRatings[dim]} | Gap: {jobRatings[dim] - personRatings[dim]} level(s)
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </>
+                            )}
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<Tool3 />);
+    </script>
+</body>
+</html>
